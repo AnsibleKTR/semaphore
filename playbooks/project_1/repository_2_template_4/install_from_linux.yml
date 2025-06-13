@@ -1,0 +1,46 @@
+---
+- name: Copier et installer VSTOR + Rainbow depuis Linux vers Windows
+  hosts: windows
+  gather_facts: no
+
+  tasks:
+    - name: Créer le dossier C:\software sur le client
+      win_file:
+        path: C:\software
+        state: directory
+
+    - name: Copier VSTOR vers le client Windows
+      win_copy:
+        src: ../software/vstor_redist.exe
+        dest: C:\software\vstor_redist.exe
+
+    - name: Copier Rainbow vers le client Windows
+      win_copy:
+        src: ../software/Rainbow_Installer-x64.exe
+        dest: C:\software\Rainbow_Installer-x64.exe
+
+    - name: Installer VSTOR
+      win_command: cmd /c start "" /wait C:\software\vstor_redist.exe /quiet /norestart
+      register: vstor_install
+      ignore_errors: no
+
+    - name: Afficher le résultat de l'installation VSTOR
+      debug:
+        var: vstor_install
+
+    - name: Installer Rainbow
+      win_command: C:\software\Rainbow_Installer-x64.exe /silent ALLUSERS=TRUE
+      register: rainbow_install
+      ignore_errors: no
+
+    - name: Afficher le résultat de l'installation Rainbow
+      debug:
+        var: rainbow_install
+
+    - name: Supprimer le dossier C:\software apres l'installation reussi 
+      win_file:
+        path: C:\software
+        state: absent
+        when: vstor_install.rc == 0 and rainbow_install.rc == 0 
+
+    

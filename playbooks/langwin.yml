@@ -1,0 +1,33 @@
+---
+- name: Appliquer fr-FR comme langue système et utilisateur
+  hosts: windows
+  gather_facts: false
+  become: no
+
+  tasks:
+
+    - name: Installer la langue fr-FR
+      win_shell: |
+        Install-Language fr-FR
+      args:
+        executable: powershell.exe
+      register: install_lang
+      failed_when: false
+
+    - name: Définir fr-FR comme langue système par défaut
+      win_shell: |
+        Set-WinSystemLocale fr-FR
+        Set-WinUILanguageOverride fr-FR
+        Set-WinUserLanguageList fr-FR -Force
+        Set-WinCultureFromLanguageListOptOut 1
+      args:
+        executable: powershell.exe
+
+    - name: Définir fr-FR pour l'utilisateur courant
+      win_shell: |
+        Set-WinUILanguageOverride -Language fr-FR
+        Set-WinUserLanguageList fr-FR -Force
+        Set-WinCultureFromLanguageListOptOut 1
+      args:
+        executable: powershell.exe
+

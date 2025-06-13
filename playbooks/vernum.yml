@@ -1,0 +1,30 @@
+---
+- name: Activer Verr Num au démarrage
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Activer Num Lock pour l’écran de login (.DEFAULT)
+      win_regedit:
+        path: 'HKU:\.DEFAULT\Control Panel\Keyboard'
+        name: InitialKeyboardIndicators
+        data: "2"
+        type: string
+
+    - name: Activer Num Lock pour le système (HKLM)
+      win_regedit:
+        path: 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Control Panel\Keyboard'
+        name: InitialKeyboardIndicators
+        data: "2"
+        type: string
+
+    - name: Activer Num Lock via Scancode Map (HKLM)
+      win_regedit:
+        path: 'HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layout'
+        name: Scancode Map
+        data: |
+          00,00,00,00,00,00,00,00,
+          02,00,00,00,45,00,45,00,
+          00,00,00,00
+        type: binary
+

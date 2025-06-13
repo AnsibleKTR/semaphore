@@ -1,0 +1,13 @@
+---
+- name: Playbook de test windows
+  hosts: windows
+  gather_facts: no
+  become: false
+  tasks:
+    - name: Verifier la connexion winrm
+      win_ping:
+
+    - name: Crée un dossier C:\Test
+      win_file:
+        path: C:\Test
+        state: directory

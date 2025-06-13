@@ -1,0 +1,38 @@
+- name: Vérifier si NTUSER.DAT existe pour {{ item.path }}
+  win_stat:
+    path: "{{ item.path }}\\NTUSER.DAT"
+  register: ntuser_file
+
+- name: Sauter si NTUSER.DAT n'existe pas
+  when: not ntuser_file.stat.exists
+  block:
+    - debug:
+        msg: "NTUSER.DAT non trouvé pour {{ item.path }}"
+    - meta: end_host
+
+- name: Charger la ruche de l'utilisateur
+  win_command: >
+    reg load HKU\Temp_{{ item.path | basename }} "{{ item.path }}\\NTUSER.DAT"
+  register: reg_load
+  failed_when: reg_load.rc != 0 and '"est déjà chargé"' not in reg_load.stderr
+  ignore_errors: yes
+
+- name: Sauter la suite si le chargement a échoué
+  when: reg_load.rc != 0
+  block:
+    - debug:
+        msg: "Impossible de charger la ruche pour {{ item.path | basename }}"
+    - meta: end_host
+
+- name: Définir fr-FR pour {{ item.path | basename }}
+  win_command: >
+    reg add "HKU\Temp_{{ item.path | basename }}\Control Panel\International" /v LocaleName /t REG_SZ /d fr-FR /f
+
+- name: Définir format date court pour {{ item.path | basename }}
+  win_command: >
+    reg add "HKU\Temp_{{ item.path | basename }}\Control Panel\International" /v sShortDate /t REG_SZ /d dd/MM/yyyy /f
+
+- name: Décharger la ruche de {{ item.path | basename }}
+  win_command: >
+    reg unload HKU\Temp_{{ item.path | basename }}
+
