@@ -6,22 +6,26 @@
   tasks:
     - name: Vérifier l'accès au partage réseau Windows
       win_stat:
-        # Doubler les anti-slashes dans le chemin UNC
-        path: \\\\SFRtoufs01\\clients\\_RAINBOW
+        path: \\\\SFRtoufs01\\clients\\_RAINBOW # Doublé les anti-slashes comme corrigé précédemment
       register: network_share_status
 
-    - name: Afficher le statut de l'accès au partage réseau
+    - name: Afficher le statut complet de l'accès au partage réseau (pour diagnostic)
       debug:
         var: network_share_status
 
     - name: Message de succès si le partage est accessible
       debug:
-        # Doubler les anti-slashes ici aussi dans le message
         msg: "Succès : L'accès au partage réseau \\\\SFRtoufs01\\clients\\_RAINBOW est confirmé !"
-      when: network_share_status.exists
+      # CORRECTION ICI : Accéder à network_share_status.stat.exists
+      when: network_share_status.stat.exists is defined and network_share_status.stat.exists
 
     - name: Message d'échec si le partage n'est pas accessible
       debug:
-        # Doubler les anti-slashes ici aussi dans le message
-        msg: "Échec : L'accès au partage réseau \\\\SFRtoufs01\\clients\\_RAINBOW est refusé ou le chemin n'existe pas."
-      when: not network_share_status.exists
+        msg: "Échec : Le chemin réseau \\\\SFRtoufs01\\clients\\_RAINBOW n'est PAS accessible ou n'existe pas."
+      # CORRECTION ICI : Accéder à network_share_status.stat.exists
+      when: network_share_status.stat.exists is defined and not network_share_status.stat.exists
+
+    - name: Message d'erreur si la vérification stat a échoué (problème de permissions profondes ou chemin invalide)
+      debug:
+        msg: "ERREUR : La vérification du partage réseau a échoué. Le chemin est-il correct et le compte a-t-il des droits ? {{ network_share_status.msg | default('N/A') }}"
+      when: network_share_status.failed is defined and network_share_status.failed
