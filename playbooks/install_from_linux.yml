@@ -1,47 +1,27 @@
 ---
-- name: Copier et installer VSTOR + Rainbow depuis Linux vers Windows
+- name: Exécuter VSTOR + Rainbow directement depuis le réseau
   hosts: windows
   gather_facts: no
 
   tasks:
-    - name: Créer le dossier C:\software sur le client
-      win_file:
-        path: C:\software
-        state: directory
+    # ATTENTION : Cette méthode n'est généralement PAS compatible avec les fichiers .exe
+    # qui ne sont pas spécifiquement conçus pour être exécutés depuis un partage réseau.
+    # La plupart des installeurs .exe nécessitent une copie locale.
 
-    - name: Copier VSTOR vers le client Windows
-      win_copy:
-        src: ../software/vstor_redist.exe
-        dest: C:\software\vstor_redist.exe
-
-    - name: Copier Rainbow vers le client Windows
-      win_copy:
-        src: ../software/Rainbow_Installer-x64.exe
-        dest: C:\software\Rainbow_Installer-x64.exe
-
-    - name: Installer VSTOR
-      win_command: cmd /c start "" /wait C:\software\vstor_redist.exe /quiet /norestart
+    - name: Exécuter VSTOR depuis le partage réseau
+      win_command: cmd /c "\\SFRtoufs01\clients\_RAINBOW\vstor_redist.exe /quiet /norestart"
       register: vstor_install
-      ignore_errors: no
+      ignore_errors: no # L'ignorer ici est risqué, mieux vaut gérer l'échec
 
-    - name: Afficher le résultat de l'installation VSTOR
+    - name: Afficher le résultat de l'exécution VSTOR
       debug:
         var: vstor_install
 
-    - name: Installer Rainbow
-      win_command: C:\software\Rainbow_Installer-x64.exe /silent ALLUSERS=TRUE
+    - name: Exécuter Rainbow depuis le partage réseau
+      win_command: cmd /c "\\SFRtoufs01\clients\_RAINBOW\Rainbow_Installer-x64.exe /silent ALLUSERS=TRUE"
       register: rainbow_install
-      ignore_errors: no
+      ignore_errors: no # Idem, mieux vaut gérer l'échec
 
-    - name: Afficher le résultat de l'installation Rainbow
+    - name: Afficher le résultat de l'exécution Rainbow
       debug:
         var: rainbow_install
-
-    - name: Supprimer le dossier C:\software apres l'installation reussi 
-      win_file:
-        path: C:\software
-        state: absent
-        when: vstor_install.rc == 0 and rainbow_install.rc == 0 
-
-    
-
