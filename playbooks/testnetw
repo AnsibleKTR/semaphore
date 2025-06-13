@@ -1,0 +1,25 @@
+---
+- name: Tester l'accès au dossier réseau WinRM
+  hosts: windows
+  gather_facts: no # Pas besoin de collecter les faits pour ce test simple
+
+  tasks:
+    - name: Vérifier l'accès au partage réseau Windows
+      # Le module win_stat est parfait pour vérifier l'existence et les permissions d'un fichier/dossier.
+      win_stat:
+        path: \\SFRtoufs01\clients\_RAINBOW
+      register: network_share_status
+
+    - name: Afficher le statut de l'accès au partage réseau
+      debug:
+        var: network_share_status
+
+    - name: Message de succès si le partage est accessible
+      debug:
+        msg: "Succès : L'accès au partage réseau \\SFRtoufs01\clients\_RAINBOW est confirmé !"
+      when: network_share_status.exists
+
+    - name: Message d'échec si le partage n'est pas accessible
+      debug:
+        msg: "Échec : L'accès au partage réseau \\SFRtoufs01\clients\_RAINBOW est refusé ou le chemin n'existe pas."
+      when: not network_share_status.exists
