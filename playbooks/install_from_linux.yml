@@ -11,19 +11,20 @@
 
     - name: Copier VSTOR depuis le partage réseau vers le client Windows
       # Le compte ansible_user (a_dangot@kontron.local) DOIT avoir les droits de lecture sur le partage UNC.
+      # 'remote_src: yes' est CRUCIAL pour indiquer que la source est accessible par la machine Windows cible.
       win_copy:
-        src: \\\\SFRtoufs01\\clients\\_RAINBOW\\vstor_redist.exe # Doubler les anti-slashes
+        src: \\\\SFRtoufs01\\clients\\_RAINBOW\\vstor_redist.exe # Doubler les anti-slashes pour YAML
         dest: C:\software\vstor_redist.exe
-        remote_src: yes # Indispensable pour les chemins UNC
+        remote_src: yes
 
     - name: Copier Rainbow depuis le partage réseau vers le client Windows
       win_copy:
-        src: \\\\SFRtoufs01\\clients\\_RAINBOW\\Rainbow_Installer-x64.exe # Doubler les anti-slashes
+        src: \\\\SFRtoufs01\\clients\\_RAINBOW\\Rainbow_Installer-x64.exe # Doubler les anti-slashes pour YAML
         dest: C:\software\Rainbow_Installer-x64.exe
         remote_src: yes
 
     - name: Installer VSTOR
-      # Maintenant, le fichier est sur C:\software, l'exécution locale est fiable.
+      # Le fichier est maintenant sur C:\software, l'exécution locale est fiable.
       win_command: cmd /c start "" /wait C:\software\vstor_redist.exe /quiet /norestart
       register: vstor_install
       ignore_errors: no # Ne pas ignorer les erreurs en production, mieux vaut savoir si ça échoue
