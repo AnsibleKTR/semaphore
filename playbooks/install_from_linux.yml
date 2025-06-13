@@ -1,27 +1,48 @@
 ---
-- name: Exécuter VSTOR + Rainbow directement depuis le réseau
+- name: Copier et installer VSTOR + Rainbow depuis le réseau vers Windows
   hosts: windows
-  gather_facts: no
+  gather_facts: no # Pas besoin de collecter les faits pour ce playbook
 
   tasks:
-    # ATTENTION : Cette méthode n'est généralement PAS compatible avec les fichiers .exe
-    # qui ne sont pas spécifiquement conçus pour être exécutés depuis un partage réseau.
-    # La plupart des installeurs .exe nécessitent une copie locale.
+    - name: Créer le dossier C:\software sur le client
+      win_file:
+        path: C:\software
+        state: directory
 
-    - name: Exécuter VSTOR depuis le partage réseau
-      win_command: cmd /c "\\SFRtoufs01\clients\_RAINBOW\vstor_redist.exe /quiet /norestart"
+    - name: Copier VSTOR depuis le partage réseau vers le client Windows
+      # Le compte ansible_user (a_dangot@kontron.local) DOIT avoir les droits de lecture sur le partage UNC.
+      win_copy:
+        src: \\\\SFRtoufs01\\clients\\_RAINBOW\\vstor_redist.exe # Doubler les anti-slashes
+        dest: C:\software\vstor_redist.exe
+        remote_src: yes # Indispensable pour les chemins UNC
+
+    - name: Copier Rainbow depuis le partage réseau vers le client Windows
+      win_copy:
+        src: \\\\SFRtoufs01\\clients\\_RAINBOW\\Rainbow_Installer-x64.exe # Doubler les anti-slashes
+        dest: C:\software\Rainbow_Installer-x64.exe
+        remote_src: yes
+
+    - name: Installer VSTOR
+      # Maintenant, le fichier est sur C:\software, l'exécution locale est fiable.
+      win_command: cmd /c start "" /wait C:\software\vstor_redist.exe /quiet /norestart
       register: vstor_install
-      ignore_errors: no # L'ignorer ici est risqué, mieux vaut gérer l'échec
+      ignore_errors: no # Ne pas ignorer les erreurs en production, mieux vaut savoir si ça échoue
 
-    - name: Afficher le résultat de l'exécution VSTOR
+    - name: Afficher le résultat de l'installation VSTOR
       debug:
         var: vstor_install
 
-    - name: Exécuter Rainbow depuis le partage réseau
-      win_command: cmd /c "\\SFRtoufs01\clients\_RAINBOW\Rainbow_Installer-x64.exe /silent ALLUSERS=TRUE"
+    - name: Installer Rainbow
+      win_command: C:\software\Rainbow_Installer-x64.exe /silent ALLUSERS=TRUE
       register: rainbow_install
-      ignore_errors: no # Idem, mieux vaut gérer l'échec
+      ignore_errors: no # Ne pas ignorer les erreurs en production, mieux vaut savoir si ça échoue
 
-    - name: Afficher le résultat de l'exécution Rainbow
+    - name: Afficher le résultat de l'installation Rainbow
       debug:
         var: rainbow_install
+
+    - name: Supprimer le dossier C:\software après l'installation réussie
+      win_file:
+        path: C:\software
+        state: absent
+        when: vstor_install.rc == 0 and rainbow_install.rc == 0 # Supprime seulement si tout va bien
